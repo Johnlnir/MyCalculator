@@ -16,20 +16,119 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml.Linq;
 
+/*
+ * This should be am app that lets you calculate using more advanced methods, stuff you're not able to do with a regular calculator:
+        - create variables and use them by their custom names
+        - create functions, calculate functions outputs for given, custom inputs
+        - represent functions using customizable plot panels
+*/
 namespace MyCalculator
 {
     public partial class MainWindow : Window
     {
-        /*
-         * This should be am app that lets you calculate using more advanced methods, stuff you're not able to do with a regular calculator:
-                - create variables and use them by their custom names
-                - create functions, calculate functions outputs for given, custom inputs
-                - represent functions using customizable plot panels
-        */
         public MainWindow()
         {
             InitializeComponent();
         }
+
+
+
+        //**** Calculator engine stuff ****
+
+        List<Variable> variables = new List<Variable>();
+
+        private bool IsUnique(Variable variable, int n = 1)  //Declare n = 0 if variable is already inside the variables list
+        {
+            for (int i = 0; i < variables.Count; i++)
+            {
+                if (variables[i].Name == variable.Name)
+                    n++;
+                if (n == 2)
+                    return false;
+            }
+            return true;
+        }
+
+        private bool IsNumber(String s)
+        {
+            double nr = 1, n = 0;
+            if (!double.TryParse(s, out nr))
+                return false;
+            else
+            {
+                for (int i = 0; i < s.Length; i++)
+                {
+                    if (s[i] == '.')
+                        n++;
+                    if (n > 1 || s[i] == ' ')
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        String lastValue = "";
+        private void TextChange(object sender, TextChangedEventArgs e)
+        {
+            TextBox text = sender as TextBox;
+            WrapPanel variable = text.Parent as WrapPanel;
+
+            if (Convert.ToInt32(variable.Tag) == -1) //......................................................................Just as a test. I'm checking if the tags are appended correctly.
+            {
+                MessageBox.Show("Whoops! There's a problem... Please contact the dev; sth is wrong with the code apparently.");
+                MessageBox.Show(Convert.ToString(variables.Count));
+            }
+
+            if (Convert.ToInt32(text.Tag) == 1) //..................................................................................................tag = 1 is for TextBoxes that hold the name of variables
+                variables[GetVariableIndexByTag(Convert.ToInt32(variable.Tag))].Name = text.Text;
+            else //.................................................................................................................................tag = 2 (or else :} ) is for TextBoxes that hold the value of variables
+            {
+                if (IsNumber(text.Text))
+                {
+                    variables[GetVariableIndexByTag(Convert.ToInt32(variable.Tag))].Value = Convert.ToDouble(text.Text);
+                    lastValue = text.Text;
+                }
+                else
+                    text.Text = lastValue;
+            }
+        }
+
+        private int GetNewTag()
+        {
+            int varTag = -1;
+            if (variables.Count == 0)
+                return 0;
+            else
+                for (int tag = variables.Count; tag >= 0; tag--)
+                    for (int i = variables.Count - 1; i >= 0; i--)
+                        if (variables[i].Tag == tag)
+                            break;
+                        else
+                        {
+                            if (i == 0)
+                            {
+                                varTag = tag;
+                                return varTag;
+                            }
+                        }
+            if (varTag == -1)
+            {
+                MessageBox.Show("Whoops! There's a problem... Please contact the dev; sth is wrong with the code apparentlyy.");
+                MessageBox.Show(Convert.ToString(variables.Count));
+            }
+            return -1;
+        }
+
+        private int GetVariableIndexByTag(int tag)
+        {
+            for(int i = 0; i < variables.Count; i++)
+                if (variables[i].Tag == tag)
+                    return i;
+            return -1;
+        }
+
+
+        //**** UI stuff ****
 
         //Show left TabItem
         //This one is for the items that appear on the left toolbar (it's a TabControl actually). Initially, there are some TabItems are not visible (collapsed), so you have to access the View menu and click on the specific item to make its tab appear
@@ -177,7 +276,7 @@ namespace MyCalculator
                 }
             }
             else
-                MessageBox.Show("You must first CREATE and SELECT a workspace sheet to create a item! Try File->New->Worksheet");
+                MessageBox.Show("You must first CREATE and SELECT a workspace sheet to create an item! Try File->New->Worksheet");
         }
 
         //Add 'Variable' to the 'Variable box'
@@ -200,7 +299,6 @@ namespace MyCalculator
                 name.KeyDown += ValidateRenameVariable;
                 name.Margin = new System.Windows.Thickness(0, 0, 5, 0);
                 name.MinWidth = 30;
-                
 
                 TextBlock equalSign = new TextBlock();
                 variable.Children.Add(equalSign);
@@ -222,6 +320,20 @@ namespace MyCalculator
                 edit.Padding = new Thickness(2, 0, 2, 0);
                 //edit.BorderThickness = new Thickness(0);
                 //edit.Background = new SolidColorBrush(Colors.Transparent);
+
+                //The next part is for creating the Variable (the actual variable) and adding it to the 'variables' list
+                {
+                    variable.Tag = GetNewTag();
+                    Variable var = new Variable();
+                    variables.Add(var);
+
+                    var.Tag = Convert.ToInt32(variable.Tag);
+                    name.Tag = 1;
+                    value.Tag = 2;
+
+                    name.TextChanged += TextChange;
+                    value.TextChanged += TextChange;
+                }
             }
         }
 
