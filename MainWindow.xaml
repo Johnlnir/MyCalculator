@@ -27,8 +27,8 @@
             </MenuItem>
             <MenuItem Header="Edit"/>
             <MenuItem Header="View">
-                <MenuItem Header="Toolbox" Tag="0" Click="MenuItem_Click"/>
-                <MenuItem Header="Properties" Tag="1" Click="MenuItem_Click"/>
+                <MenuItem Header="Toolbox" Tag="0" Click="ViewMenuItem_Click"/>
+                <MenuItem Header="Properties" Tag="1" Click="ViewMenuItem_Click"/>
             </MenuItem>
         </Menu>
         
@@ -43,10 +43,10 @@
                 </TabItem.Header>
                 <TabItem.Content>
                     <WrapPanel Orientation="Vertical" Visibility="Collapsed">
-                        <Button Content="Variable box"/>
-                        <Button Content="Function box"/>
-                        <Button Content="Equation box"/>
-                        <Button Content="Plot"/>
+                        <Button Content="Variable box" Click="CreateVariableBox" Background="Transparent" BorderThickness="0"/>
+                        <Button Content="Function box" Background="Transparent" BorderThickness="0"/>
+                        <Button Content="Equation box" Background="Transparent" BorderThickness="0"/>
+                        <Button Content="Plot" Background="Transparent" BorderThickness="0"/>
                     </WrapPanel>
                 </TabItem.Content>
             </TabItem>
@@ -66,7 +66,6 @@
 
         <!--The middle section, a TabControl that manages the main content-->
         <TabControl x:Name="midTabControl" Grid.Row="1" Grid.Column="1">
-
         </TabControl>
     </Grid>
 </Window>
