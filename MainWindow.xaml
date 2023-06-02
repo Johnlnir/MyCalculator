@@ -44,7 +44,7 @@
                 <TabItem.Content>
                     <WrapPanel Orientation="Vertical" Visibility="Collapsed">
                         <Button Content="Variable box" Click="CreateVariableBox" Background="Transparent" BorderThickness="0"/>
-                        <Button Content="Function box" Background="Transparent" BorderThickness="0"/>
+                        <Button Content="Function box" Click="CreateFunctionBox"  Background="Transparent" BorderThickness="0"/>
                         <Button Content="Equation box" Background="Transparent" BorderThickness="0"/>
                         <Button Content="Plot" Background="Transparent" BorderThickness="0"/>
                     </WrapPanel>
