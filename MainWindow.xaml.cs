@@ -31,13 +31,20 @@ namespace MyCalculator
             InitializeComponent();
         }
 
+        private void kkkk(object sender, KeyEventArgs e)
+        {
+            MessageBox.Show(e.Key.ToString());
+            
+        }
 
-
+        //*********************************************************************************************************************************************************************************************************
+        //*********************************************************************************************************************************************************************************************************
+        //*********************************************************************************************************************************************************************************************************
         //**** Calculator engine stuff ****
 
         List<Variable> variables = new List<Variable>();
 
-        private bool IsUnique(Variable variable, int n = 1)  //Declare n = 0 if variable is already inside the variables list
+        private bool IsUnique(Variable variable, int n = 0)  //Declare n = 1 if the variable is not in the list of variables
         {
             for (int i = 0; i < variables.Count; i++)
             {
@@ -52,45 +59,77 @@ namespace MyCalculator
         private bool IsNumber(String s)
         {
             double nr = 1, n = 0;
+
+            if (s == "")
+                return true;
             if (!double.TryParse(s, out nr))
                 return false;
             else
             {
+                if (s.Length > 1)
+                    if (s[0] == '0' && s[1] != '.')
+                        return false;
                 for (int i = 0; i < s.Length; i++)
                 {
                     if (s[i] == '.')
                         n++;
                     if (n > 1 || s[i] == ' ')
                         return false;
+                    if (s[i] == ',')
+                        return false;
                 }
                 return true;
             }
         }
 
-        String lastValue = "";
         private void TextChange(object sender, TextChangedEventArgs e)
         {
-            TextBox text = sender as TextBox;
-            WrapPanel variable = text.Parent as WrapPanel;
+            TextBox textBox = sender as TextBox;
+            WrapPanel variable = textBox.Parent as WrapPanel;
+            int index = GetVariableIndexByTag(Convert.ToInt32(variable.Tag));
 
-            if (Convert.ToInt32(variable.Tag) == -1) //......................................................................Just as a test. I'm checking if the tags are appended correctly.
+            if (Convert.ToInt32(textBox.Tag) == 1)
+                variables[index].Name = textBox.Text;
+            else
             {
-                MessageBox.Show("Whoops! There's a problem... Please contact the dev; sth is wrong with the code apparently.");
-                MessageBox.Show(Convert.ToString(variables.Count));
-            }
-
-            if (Convert.ToInt32(text.Tag) == 1) //..................................................................................................tag = 1 is for TextBoxes that hold the name of variables
-                variables[GetVariableIndexByTag(Convert.ToInt32(variable.Tag))].Name = text.Text;
-            else //.................................................................................................................................tag = 2 (or else :} ) is for TextBoxes that hold the value of variables
-            {
-                if (IsNumber(text.Text))
+                if (IsNumber(textBox.Text) && variables[index].enable)
                 {
-                    variables[GetVariableIndexByTag(Convert.ToInt32(variable.Tag))].Value = Convert.ToDouble(text.Text);
-                    lastValue = text.Text;
+                    if (textBox.Text == "")
+                        variables[index].Value = 0;
+                    else
+                        variables[index].Value = Convert.ToDouble(textBox.Text);
+                    variables[index].LastValue = textBox.Text;
                 }
                 else
-                    text.Text = lastValue;
+                {
+                    if (variables[index].enable)
+                        textBox.Text = variables[index].LastValue;
+                }
             }
+
+            TextBlock warning = variable.Children[variable.Children.Count - 1] as TextBlock;
+
+            if (!IsUnique(variables[index]))
+                warning.Visibility = Visibility.Visible;
+            else
+                warning.Visibility = Visibility.Hidden;
+        }
+
+        private void ValueBoxKeyDown(object sender, KeyEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+            WrapPanel variable = textBox.Parent as WrapPanel;
+            int index = GetVariableIndexByTag(Convert.ToInt32(variable.Tag));
+
+            Key key = e.Key;
+
+            if (key != Key.D0 && key != Key.D1 && key != Key.D2 && key != Key.D3 && key != Key.D4 && key != Key.D5 && key != Key.D6 && key != Key.D7 && key != Key.D8 && key != Key.D9 && key != Key.OemPeriod && key != Key.Back)
+            {
+                variables[index].LastValue = textBox.Text;
+                variables[index].enable = false;
+            }
+            else
+                variables[index].enable = true;
         }
 
         private int GetNewTag()
@@ -128,6 +167,9 @@ namespace MyCalculator
         }
 
 
+        //*********************************************************************************************************************************************************************************************************
+        //*********************************************************************************************************************************************************************************************************
+        //*********************************************************************************************************************************************************************************************************
         //**** UI stuff ****
 
         //Show left TabItem
@@ -257,7 +299,7 @@ namespace MyCalculator
             !If requested while no worksheet (TabItem on middle TabControl) is selected (it also has to be opened, obv), it will show a MessageBox
         with instructions.
         */
-        private void CreateVariableBox(object sender, RoutedEventArgs e)
+        private void CreateVariableBox(object sender, EventArgs e)
         {
             if (midTabControl.SelectedContent != null)
             {
@@ -318,10 +360,18 @@ namespace MyCalculator
                 edit.Content = "Edit";
                 edit.Click += EditVariable;
                 edit.Padding = new Thickness(2, 0, 2, 0);
-                //edit.BorderThickness = new Thickness(0);
-                //edit.Background = new SolidColorBrush(Colors.Transparent);
 
-                //The next part is for creating the Variable (the actual variable) and adding it to the 'variables' list
+                TextBlock warning = new TextBlock();
+                variable.Children.Add(warning);
+
+                warning.Visibility = Visibility.Hidden;
+                warning.Text = "!A variable with the same name has already been declared!";
+                warning.Margin = new Thickness(10, 0, 0, 0);
+                warning.Padding = new Thickness(5, 0, 5, 0);
+                warning.Background = new SolidColorBrush(Colors.Azure);
+                warning.Foreground = Brushes.Red;
+
+                //The next part is for creating the Variable (the actual variable), adding it to the 'variables' list and setting some tags so the controls can be used later.
                 {
                     variable.Tag = GetNewTag();
                     Variable var = new Variable();
@@ -331,8 +381,14 @@ namespace MyCalculator
                     name.Tag = 1;
                     value.Tag = 2;
 
+                    var.LastValue = "";
+                    var.enable = true;
+
                     name.TextChanged += TextChange;
                     value.TextChanged += TextChange;
+                    value.KeyDown += ValueBoxKeyDown;
+
+                    value.Text = "";
                 }
             }
         }
@@ -359,6 +415,75 @@ namespace MyCalculator
                 TextBox textBox = sender as TextBox;
                 textBox.IsEnabled = false;
             }
+        }
+
+        private void CreateFunctionBox(object sender, EventArgs e)
+        {
+            if (midTabControl.SelectedContent != null)
+            {
+                WrapPanel content = midTabControl.SelectedContent as WrapPanel;
+
+                WrapPanel functionBox = new WrapPanel();
+                content.Children.Add(functionBox);
+
+                functionBox.Orientation = Orientation.Vertical;
+
+                {
+                    Button create = new Button();
+                    functionBox.Children.Add(create);
+
+                    create.Click += AddFunction;
+                    create.Content = "Add function";
+                }
+            }
+        }
+
+        private void AddFunction(object sender, EventArgs e)
+        {
+            Button button = sender as Button;
+            WrapPanel functionBox = button.Parent as WrapPanel;
+
+            WrapPanel function = new WrapPanel();
+            functionBox.Children.Add(function);
+
+            function.Orientation = Orientation.Horizontal;
+
+            function.Margin = new Thickness(0, 5, 0, 5);
+
+            {
+                TextBox name = new TextBox();
+                function.Children.Add(name);
+
+                TextBlock equalSign = new TextBlock();
+                function.Children.Add(equalSign);
+
+                TextBox expression = new TextBox();
+                function.Children.Add(expression);
+
+                Button edit = new Button();
+                function.Children.Add(edit);
+
+                equalSign.Text = "=";
+                edit.Content = "Edit";
+
+                name.Margin = new Thickness(0, 0, 5, 0);
+                expression.Margin = new Thickness(5, 0, 5, 0);
+                edit.Padding = new Thickness(2, 0, 2, 0);
+
+                name.MinWidth = 30;
+                expression.MinWidth = 30;
+
+                edit.Click += EditFunction;
+            }
+        }
+
+        private void EditFunction(object sender, EventArgs e)
+        {
+            Button edit = sender as Button;
+            WrapPanel function = edit.Parent as WrapPanel;
+
+            function.Children[0].IsEnabled = true;
+            function.Children[2].IsEnabled = true;
         }
     }
 }
